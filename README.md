@@ -28,8 +28,10 @@ account number was invalid or one or more character was illegible.
 
 # System Requirements
 To build this project you need Java 8.0 (Java SDK 1.8) or better and [Maven 3.0](https://maven.apache.org/install.html)or better. 
+
+Clone the repository 
 ```
- $ git clone 
+ $ git clone git@github.com:bswanson3/bankKata.git
 ```
 
 Navigate to the root directory of the project and in order to compile and run all tests run
@@ -52,17 +54,17 @@ To run all the tests navigate to the root directory and type
 
 User Story 1 Tests
 ```$xslt
- $ mvn clean test Dtest=UserStoryOneTest
+ $ mvn clean test -Dtest=UserStoryOneTest
 ```
 
 User Story 2 Tests
 ```$xslt
- $ mvn clean test Dtest=UserStoryTwoTest
+ $ mvn clean test -Dtest=UserStoryTwoTest
 ```
 
 User Story 3 Tests
 ```$xslt
- $ mvn clean test Dtest=UserStoryThreeTest
+ $ mvn clean test -Dtest=UserStoryThreeTest
 ```
 
 # Built With
