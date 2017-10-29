@@ -1,6 +1,5 @@
 package net.bswanson;
 
-import org.apache.log4j.Logger;
 
 /**
  * The type Account Number which represents one account printed out by the Bank Machine.
@@ -8,8 +7,6 @@ import org.apache.log4j.Logger;
  * @author bswanson
  */
 public class AccountNumber {
-    private final Logger log = Logger.getLogger(this.getClass());
-    private Boolean containsIllegalCharacter = false;
     private String[] accountNumberArray;
 
     /**
@@ -26,17 +23,8 @@ public class AccountNumber {
      *
      * @return the string [ ]
      */
-    public String[] getAccountNumberArray() {
+    String[] getAccountNumberArray() {
         return accountNumberArray;
-    }
-
-    /**
-     * Sets account number array.
-     *
-     * @param accountNumberArray the account number array
-     */
-    public void setAccountNumberArray(String[] accountNumberArray) {
-        this.accountNumberArray = accountNumberArray;
     }
 
     /**
@@ -47,13 +35,13 @@ public class AccountNumber {
      * @return the account number string
      */
     String getAccountNumberString(String[] characterArray) {
-        String accountNumberString = "";
+        StringBuilder accountNumberString = new StringBuilder();
 
         for (String accountNumber : characterArray) {
-            accountNumberString += getStringFromCharacter(accountNumber);
+            accountNumberString.append(getStringFromCharacter(accountNumber));
         }
 
-        return accountNumberString;
+        return accountNumberString.toString();
     }
 
     /**
@@ -73,7 +61,6 @@ public class AccountNumber {
             }
         }
         // No match was found indicating an illegal character
-        containsIllegalCharacter = true;
         return "?";
     }
 
@@ -82,9 +69,9 @@ public class AccountNumber {
      *
      * @return the type of account number.
      */
-    private String addDescriptionToAccount(String accountString) {
+    String addDescriptionToAccount(String accountString) {
         // There will be fewer items in the account number int array with invalid characters
-        if (containsIllegalCharacter) {
+        if (accountString.contains("?")) {
             return " ILL";
         } else if (checkSum(accountString)) {
             return "";
