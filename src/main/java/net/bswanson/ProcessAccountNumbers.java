@@ -8,6 +8,13 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 
 /**
@@ -31,68 +38,49 @@ class ProcessAccountNumbers {
      * @param args the args
      */
     public void run(String[] args) {
-        String defaultFileToRead = "/Users/brookeswanson/Desktop/defaultReadFile.txt";
-        String defaultFileToWrite = System.getProperty("java.io.tmpdir") + "convertedAccountNumbers";
+        String[] readFiles = {"/Users/brookeswanson/Desktop/defaultReadFile.txt", "/Users/brookeswanson/Desktop/defaultReadFile.txt"};
+        IntStream.range(0, args.length)
+                .filter(i -> i < readFiles.length)
+                .mapToObj(i -> readFiles[i]);
 
-        if (args.length == 1) {
-            defaultFileToRead = args[0];
-            log.info("Reading from " + args[0]);
-        } else if (args.length == 2) {
-            defaultFileToRead = args[0];
-            defaultFileToWrite = args[1];
-            log.info("Reading from " + args[0] + " Writing to " + args[1]);
+        try {
+            openFileToRead(readFiles[0]);
+        } catch (IOException io) {
+            log.error("The file was not able to read", io);
         }
-
-        openFileToRead(defaultFileToRead);
-        accountNumbers.writeOutputFile(defaultFileToWrite);
+        accountNumbers.writeOutputFile(readFiles[1]);
 
     }
 
     /**
      * Read lines in file.
      *
-     * @param input the input
+     * @param lines the lines
      * @throws IOException the io exception
      */
-    void readLinesInFile(BufferedReader input) throws IOException {
-        String line;
+    void readLinesInFile(Stream<String> lines) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        final Integer[] index = {0};
+        final List<String[]> splitCharacters = new ArrayList<String[]>();
 
-        while (input.ready()) {
-            // in a well formatted document, with these sets of characters numbers consisting of only 1 or 4 can read incorrectly
-            line = input.readLine();
-            if (line.isEmpty()) {
-                line += Strings.repeat(" ", 27); // empty rows for 1 & 4's weren't always read
-            }
-            line += input.readLine() + input.readLine();
-
-            if (line.length() == 81) {
-                accountNumbers.addAccountNumber(createAccountNumber(line));
-            }
-
-            // skip line 4
-            input.readLine();
-        }
+        Splitter.fixedLength(81).split(lines.filter(line -> !((index[0] += 1) % 4 == 0))
+                .reduce("", (a, b) ->  a + b))
+                .iterator()
+                .forEachRemaining(ch -> accountNumbers.addAccountNumber(createAccountNumber(ch)));
     }
 
     /**
      * Create account number object.
      *
      * @param characters the input from the machine printed characters in a string.
+     * @return the account number
      */
     AccountNumber createAccountNumber(String characters) {
         String[] splitCharacters = new String[]{"", "", "", "", "", "", "", "", ""};
         Iterable<String> machineCharacters = Splitter.fixedLength(3).split(characters);
 
-        int characterLocation = 0;
-        for (String character: machineCharacters) {
-            splitCharacters[characterLocation] += character;
-
-            characterLocation += 1;
-
-            if (characterLocation % 9 == 0) {
-                characterLocation = 0;
-            }
-        }
+        final Integer[] characterLocation = {0};
+        Splitter.fixedLength(3).split(characters).iterator().forEachRemaining(ch ->splitCharacters[(characterLocation[0] += 1) % 9] += ch);
 
         return new AccountNumber(splitCharacters);
 
@@ -103,17 +91,10 @@ class ProcessAccountNumbers {
      * Open file to read.
      *
      * @param inputFilePath the input file path
+     * @throws IOException the io exception
      */
-    void openFileToRead(String inputFilePath) {
-        try (BufferedReader input = new BufferedReader(new FileReader(inputFilePath))
-        ) {
-            readLinesInFile(input);
-        } catch (FileNotFoundException fileNotFoundException) {
-            log.error("The file " + inputFilePath + " was not found.", fileNotFoundException);
-        } catch (IOException ioException) {
-            log.error("There was an error that occurred when attempting to read the file. ", ioException);
-        } catch (Exception exception) {
-            log.error("");
-        }
+    void openFileToRead(String inputFilePath) throws IOException {
+        Stream<String> lines = Files.lines(Paths.get(inputFilePath));
+        readLinesInFile(lines);
     }
 }

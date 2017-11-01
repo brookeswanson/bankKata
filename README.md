@@ -26,6 +26,12 @@ checksum calculation:
 Creating a print out of the converted account numbers including either ERR or ILL if the 
 account number was invalid or one or more character was illegible.
 
+#### User Story Four:
+
+Checking to see if the machine missed or added an extra " ", _, or |.  Returning the new valid account string if only
+one is found otherwise returning a list of potentially valid account numbers. If no options or found default to user story
+3 rules.
+
 # System Requirements
 To build this project you need Java 8.0 (Java SDK 1.8) or better and [Maven 3.0](https://maven.apache.org/install.html)or better. 
 
@@ -45,6 +51,13 @@ The app will take one or 2 command line arguments:
 ```
 mvn exec:java -Dexec.mainClass="net.bswanson.App" -Dexec.args="FILE_TO_READ FILE_TO_WRITE"
 ```
+
+#### Functional Refactor: 
+After you have cloned 
+```
+ $ git checkout functional-refactor
+```
+
 
 # Running the tests
 To run all the tests navigate to the root directory and type
