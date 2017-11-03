@@ -1,18 +1,9 @@
 package net.bswanson;
-
 import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
 import org.apache.log4j.Logger;
-
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -61,8 +52,6 @@ class ProcessAccountNumbers {
     void readLinesInFile(Stream<String> lines) throws IOException {
         StringBuilder sb = new StringBuilder();
         final Integer[] index = {0};
-        final List<String[]> splitCharacters = new ArrayList<String[]>();
-
         Splitter.fixedLength(81).split(lines.filter(line -> !((index[0] += 1) % 4 == 0))
                 .reduce("", (a, b) ->  a + b))
                 .iterator()

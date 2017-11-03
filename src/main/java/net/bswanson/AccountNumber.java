@@ -3,7 +3,9 @@ package net.bswanson;
 
 import org.apache.log4j.Logger;
 
+import javax.crypto.Mac;
 import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  * The type Account Number which represents one account printed out by the Bank Machine.
@@ -50,13 +52,7 @@ public class AccountNumber {
      * @return the account number string
      */
     String getAccountNumberString(String[] characterArray) {
-        StringBuilder accountNumberString = new StringBuilder();
-
-        for (String accountNumber : characterArray) {
-            accountNumberString.append(getStringFromCharacter(accountNumber));
-        }
-
-        return accountNumberString.toString();
+        return Arrays.stream(characterArray).map(AccountNumber::getStringFromCharacter).reduce("", String::concat);
     }
 
     /**
@@ -65,8 +61,9 @@ public class AccountNumber {
      * @param machineCharacter the character the machine printed
      * @return a digit [0-9] or ? depending on if the passed in string matched a value.
      */
-    String getStringFromCharacter(String machineCharacter) {
+    static String getStringFromCharacter(String machineCharacter) {
         // Check for a match between all characters
+        Arrays.stream(MachineCharacter.values()).filter(ch -> ch.checkCharacter(machineCharacter));
         for (MachineCharacter number: MachineCharacter.values()) {
 
             // Match is found
@@ -86,16 +83,14 @@ public class AccountNumber {
      * @return the type of account number.
      */
     String addDescriptionToAccount(String accountString) {
-
         List<String> validAccounts;
-        // There will be fewer items in the account number int array with invalid characters
-        if (accountString.matches("//?.*//?")) {
+
+        // There will be a question mark in the invalid characters
+        if (accountString.matches("//?.*//?")) { // catches more than 1 invalid character
             return accountString + " ILL";
         } else if (accountString.contains("?")){
-            validAccounts = new ArrayList<String>();
             int index = accountString.indexOf("?");
-
-            validAccounts = possibleAccountNumbers(validAccounts, accountString, index);
+            validAccounts = possibleAccountNumbers(accountString, index);
 
             return getAmbListOfAccountNumbers(validAccounts, accountString, " ILL");
         } else if (checkSum(accountString)) {
@@ -118,7 +113,7 @@ public class AccountNumber {
 
         for (int index = 0; index < accountNumberString.length(); index += 1)
         {
-            validAccounts = possibleAccountNumbers(validAccounts, accountNumberString, index);
+            validAccounts = possibleAccountNumbers(accountNumberString, index);
         }
 
         return validAccounts;
@@ -127,49 +122,79 @@ public class AccountNumber {
     /**
      * Possible account numbers string.
      *
-     * @param validAccounts           the valid accounts
      * @param accountStringCharacters the account string characters
      * @param index                   the index
      * @return the string
      */
-    List<String> possibleAccountNumbers(List<String> validAccounts, String accountStringCharacters, int index) {
+    List<String> possibleAccountNumbers(String accountStringCharacters, int index) {
+        List<String> validAccounts = new ArrayList<String>();
         String machineCharacter = accountNumberArray[index];
-
-        // make a new character
-
         for (int machineIndex = 0; machineIndex < machineCharacter.length(); machineIndex += 1) {
-
-
-            char character = machineCharacter.charAt(machineIndex);
-            char[] options = characterMap.get(character);
-
-            for (char option :
-                    options) {
-                StringBuilder sb = new StringBuilder();
-                sb.append(machineCharacter.substring(0, machineIndex));
-                sb.append(option);
-                sb.append(machineCharacter.substring(machineIndex + 1));
-
-                String convertedCharacter = sb.toString();
-                String checkCharacter = getStringFromCharacter(convertedCharacter);
-
-                if (!checkCharacter.equals("?")) {
-                    StringBuilder sbAccount = new StringBuilder();
-                    sbAccount.append(accountStringCharacters.substring(0, index));
-                    sbAccount.append(checkCharacter);
-                    sbAccount.append(accountStringCharacters.substring(index + 1));
-
-                    String accountStringCharactersString = sbAccount.toString();
-                    if (checkSum(accountStringCharactersString)) {
-                        validAccounts.add(accountStringCharactersString);
-                    }
-                }
-            }
-
+            validAccounts = loopThroughCharacters(machineIndex, accountStringCharacters, index);
         }
 
         return validAccounts;
     }
+
+    /**
+     * Loop through characters list.
+     *
+     * @param machineIndex  the machine index
+     * @param accountString the account string
+     * @param index         the index
+     * @return the list
+     */
+    List<String> loopThroughCharacters(int machineIndex, String accountString, int index) {
+        List<String> validAccounts = new ArrayList<String>();
+        String machineCharacter = accountNumberArray[index];
+
+        char character = machineCharacter.charAt(machineIndex);
+        char[] options = characterMap.get(character);
+
+        for (char option :
+                options) {
+
+            String checkCharacter = createNewCharacter(machineIndex, machineCharacter, option);
+            if (!checkCharacter.equals("?")) {
+                String accountStringCharactersString = replaceCharacterInString(index, accountString, checkCharacter.charAt(0));
+                if (checkSum(accountStringCharactersString)) {
+                    validAccounts.add(accountStringCharactersString);
+                }
+            }
+        }
+
+        return validAccounts;
+    }
+
+    /**
+     * Replace character in string string.
+     *
+     * @param index        the index
+     * @param input        the input
+     * @param tryCharacter the try character
+     * @return the string
+     */
+    String replaceCharacterInString(int index, String input, char tryCharacter) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(input.substring(0, index));
+        sb.append(tryCharacter);
+        sb.append(input.substring(index +1));
+
+        return sb.toString();
+    }
+
+    /**
+     * Create new character string.
+     *
+     * @param index        the index
+     * @param input        the input
+     * @param tryCharacter the try character
+     * @return the string
+     */
+    String createNewCharacter(int index, String input, char tryCharacter) {
+        String character = replaceCharacterInString(index, input, tryCharacter);
+        return getStringFromCharacter(character);
+    };
 
     /**
      * Gets amb list of account numbers.
@@ -210,16 +235,9 @@ public class AccountNumber {
      * @return valid or not valid account number
      */
     Boolean checkSum(String checkString) {
-        int sum = 0;
-
-        for (int index = 0; index < checkString.length(); index += 1) {
-            String character = "" + checkString.charAt(index);
-            int value = Integer.parseInt(character);
-            sum += value * -(index - 9);
-        }
-
-        // Returns True if the account is valid, and false otherwise.
-        return sum % 11 == 0;
+        return IntStream.range(0, checkString.length())
+                .map(i -> Integer.parseInt(checkString.charAt(i) + "") * -(i - 9))
+                .sum() % 11 == 0;
     }
 
     /**
